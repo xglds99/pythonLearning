@@ -1,0 +1,9 @@
+# 定义间隔时间分组
+time: 5
+# 定义每个网站访问次数分组
+number: 3
+# 定义网站列表分组
+url_list:
+  - https://fanyi.youdao.com/
+  - https://www.bilibili.com/v/life/daily
+  - https://www.bilibili.com/v/life/daily

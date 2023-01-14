@@ -1,0 +1,5 @@
+f = open('a.txt', 'r')
+buf = f.read(3)
+print(buf)
+buf = f.read(3)
+print(buf)

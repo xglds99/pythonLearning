@@ -1,0 +1,10 @@
+LOGIN:
+    url: "http://xxx:8080/login/"
+    data: {"username":"jike2021","password":get_md5("12345qwert")}
+    
+user:
+    tester: 'jike'
+    age: 18
+    bl: 'true'
+    f: 1.2
+    l: [1,2,3,4,'a']
