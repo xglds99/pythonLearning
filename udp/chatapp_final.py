@@ -92,78 +92,75 @@ def send_msg(UDPCliSock, own_client_name, queue, SERVER_ADDR):
                 ack = queue.get(0.5)
                 if ack == 'success':
                     print(f'>>> [Entered group <{group_name}> successfully]')
+                    while True:
+                        data = input(f'>>> (<{group_name}>)')
+                        user_msg = data.split(' ')
+                        command = user_msg[0]
+                        if command == 'send_group':
+                            message = user_msg[1]
+                            # 发往服务端
+                            UDPCliSock.sendto(
+                                bytes("send_group#@" + group_name + "#@" + own_client_name + "#@" + message, 'utf-8'),
+                                SERVER_ADDR)
+                            time.sleep(0.5)
+                            is_success = False
+                            if not queue.empty():
+                                ack = queue.get(timeout=0.5)
+                                if ack == 'success':
+                                    is_success = True
+                                    print(f"\n>>> (<{group_name}>) [Message received by Server.]")
+                            if not is_success:
+                                print(f'\n>>> (<{group_name}>) [Server not responding.]')
+                                print(f">>> (<{group_name}>) [Exiting]")
+                        elif command == 'list_members':
+                            UDPCliSock.sendto(bytes("list_members#@" + group_name + "#@" + own_client_name, 'utf-8'),
+                                              SERVER_ADDR)
+                            time.sleep(0.5)
+                            is_success = False
+                            if not queue.empty():
+                                list_members = queue.get()
+                                print(f"\n>>> (<{group_name}>) [Members in the group <{group_name}>:]")
+                                for u in list_members:
+                                    print(f">>> (<{group_name}>) <{u}>")
+                                is_success = True
+                            if not is_success:
+                                print(f"\n>>> (<{group_name}>) [Server not responding.]")
+                                print(f'>>> (<{group_name}>) [Exiting]')
+                        elif command == 'leave_group':
+                            UDPCliSock.sendto(bytes("leave_group#@" + group_name + "#@" + own_client_name, 'utf-8'),
+                                              SERVER_ADDR)
+                            time.sleep(0.5)
+                            is_recv = False
+                            if not queue.empty():
+                                ack = queue.get()
+                                is_recv = True
+                                if ack == 'success':
+                                    print(f">>> [Leave group chat <{group_name}>]")
+                            if not is_recv:
+                                print(">>> [Server not responding.]")
+                                print(f'>>> (<{group_name}>) [Exiting]')
+                            time.sleep(0.5)
+                            if not queue.empty():
+                                private_messages_store = queue.get()
+                                if private_messages_store and len(private_messages_store) > 0:
+                                    for msg in private_messages_store:
+                                        m = msg.split('#@')
+                                        print("\n>>> " + m[0] + " : " + m[1])
+                            break
+                        elif user_msg[0] == 'dereg':
+                            UDPCliSock.sendto(bytes("dereg#@" + own_client_name, 'utf-8'), SERVER_ADDR)
+                            # wait 500msc and retry 5 times
+                            time.sleep(2)
+                            for i in range(5):
+                                if not queue.empty():
+                                    ack = queue.get()
+                                    if ack == 'deregrecv':
+                                        print(">>> [You are Offline. Bye.]")
+                                        sys.exit(0)
+                            print(">>>  [Server not responding]")
+                            print(">>>  [Exiting]")
                 elif ack == 'fail':
                     print(f' >>> [Group <{group_name}> does not exist]')
-        elif user_msg[0] == 'enter_group_mode':
-            group_name = user_msg[1]
-            UDPCliSock.sendto(bytes("enter_group_mode#@" + own_client_name, 'utf-8'), SERVER_ADDR)
-            while True:
-                data = input(f'>>> (<{group_name}>)')
-                user_msg = data.split(' ')
-                command = user_msg[0]
-                if command == 'send_group':
-                    message = user_msg[1]
-                    # 发往服务端
-                    UDPCliSock.sendto(
-                        bytes("send_group#@" + group_name + "#@" + own_client_name + "#@" + message, 'utf-8'),
-                        SERVER_ADDR)
-                    time.sleep(0.5)
-                    is_success = False
-                    if not queue.empty():
-                        ack = queue.get(timeout=0.5)
-                        if ack == 'success':
-                            is_success = True
-                            print(f"\n>>> (<{group_name}>) [Message received by Server.]")
-                    if not is_success:
-                        print(f'\n>>> (<{group_name}>) [Server not responding.]')
-                        print(f">>> (<{group_name}>) [Exiting]")
-                elif command == 'list_members':
-                    UDPCliSock.sendto(bytes("list_members#@" + group_name + "#@" + own_client_name, 'utf-8'),
-                                      SERVER_ADDR)
-                    time.sleep(0.5)
-                    is_success = False
-                    if not queue.empty():
-                        list_members = queue.get()
-                        print(f"\n>>> (<{group_name}>) [Members in the group <{group_name}>:]")
-                        for u in list_members:
-                            print(f">>> (<{group_name}>) <{u}>")
-                        is_success = True
-                    if not is_success:
-                        print(f"\n>>> (<{group_name}>) [Server not responding.]")
-                        print(f'>>> (<{group_name}>) [Exiting]')
-                elif command == 'leave_group':
-                    UDPCliSock.sendto(bytes("leave_group#@" + group_name + "#@" + own_client_name, 'utf-8'),
-                                      SERVER_ADDR)
-                    time.sleep(0.5)
-                    is_recv = False
-                    if not queue.empty():
-                        ack = queue.get()
-                        is_recv = True
-                        if ack == 'success':
-                            print(f">>> [Leave group chat <{group_name}>]")
-                    if not is_recv:
-                        print(">>> [Server not responding.]")
-                        print(f'>>> (<{group_name}>) [Exiting]')
-                    time.sleep(0.5)
-                    if not queue.empty():
-                        private_messages_store = queue.get()
-                        if private_messages_store and len(private_messages_store) > 0:
-                            for msg in private_messages_store:
-                                m = msg.split('#@')
-                                print("\n>>> " + m[0] + " : " + m[1])
-                    break
-                elif user_msg[0] == 'dereg':
-                    UDPCliSock.sendto(bytes("dereg#@" + own_client_name, 'utf-8'), SERVER_ADDR)
-                    # wait 500msc and retry 5 times
-                    time.sleep(2)
-                    for i in range(5):
-                        if not queue.empty():
-                            ack = queue.get()
-                            if ack == 'deregrecv':
-                                print(">>> [You are Offline. Bye.]")
-                                sys.exit(0)
-                    print(">>>  [Server not responding]")
-                    print(">>>  [Exiting]")
 
 
 def recv_msg(udp_client_socket, own_client_name, queue, SERVER_ADDR):
@@ -205,6 +202,7 @@ def recv_msg(udp_client_socket, own_client_name, queue, SERVER_ADDR):
         elif message[0] == 'join_group':
             if message[1] == 'success':
                 queue.put('success')
+                is_group_mode = True
             elif message[1] == 'fail':
                 queue.put('fail')
         elif message[0] == 'group_message':
@@ -226,52 +224,8 @@ def recv_msg(udp_client_socket, own_client_name, queue, SERVER_ADDR):
                 time.sleep(0.2)
             if len(private_message_store) > 0:
                 queue.put(private_message_store)
-        elif message[0] == 'enter_group_mode':
-            if message[1] == 'success':
-                is_group_mode = True
 
 
-# def server_recv(UDPSerSock):
-#     while True:
-#         data, addr = UDPSerSock.recvfrom(4096)
-#         client_msg = data.decode("utf-8")
-#         msg = client_msg.split('#@')
-#         if msg[0] == 'login':
-#             client_name = msg[1]
-#             if client_name in clients_map:
-#                 print("已经登录，无需重复上线")
-#             else:
-#                 client_info = [addr, 1]  # 1表示在线， 0表示离线
-#                 clients_map[client_name] = client_info
-#                 print("{} is online,address is {}".format(data.decode(), addr))
-#                 UDPSerSock.sendto(bytes("[Welcome, You are registered.]", 'utf-8'), addr)
-#                 clients = json.dumps(clients_map)
-#                 print(clients_map)
-#                 for c in clients_map:
-#                     UDPSerSock.sendto(bytes("update#@" + clients, 'utf-8'), clients_map[c][0])
-#         elif msg[0] == 'dereg':
-#             recv_client_name = msg[1]
-#             UDPSerSock.sendto(bytes("dereg#@recv#@" + recv_client_name, "utf-8"), clients_map[recv_client_name][0])
-#             if recv_client_name in clients_map and clients_map[recv_client_name][1] == 1:
-#                 clients_map[recv_client_name][1] = 0
-#                 clients_map.pop(recv_client_name)
-#                 # 广播!
-#                 for c in clients_map:
-#                     if c != recv_client_name:
-#                         UDPSerSock.sendto(bytes("update#@" + json.dumps(clients_map), 'utf-8'), clients_map[c][0])
-#         elif msg[0] == 'create_group':
-#             group_name = msg[1]
-#             group_creator = msg[2]
-#             if group_name in groups_map:
-#                 print(f'>>> [Client {group_creator} created group {group_name} failed, group already exists]')
-#                 UDPSerSock.sendto(bytes("create#@exist", 'utf-8'), clients_map[group_creator][0])
-#             else:
-#                 group = [group_creator]
-#                 groups_map[group_name] = group
-#                 print(f'>>> [Client {group_creator} created group {group_name} successfully')
-#                 UDPSerSock.sendto(bytes("create#@success", 'utf-8'), clients_map[group_creator][0])
-#         elif msg[0] == 'list_groups':
-#             UDPSerSock.sendto(bytes("list_groups#@" + json.dumps(groups_map)), clients_map[msg[1]][0])
 def server_input(UDPSerSock, ADDR):
     while True:
         data = input(">>> ")

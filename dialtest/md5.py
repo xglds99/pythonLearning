@@ -11,7 +11,7 @@ import sys
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
 
-import file_md5
+from job import file_md5
 
 
 class Ui_MainWindow(object):
